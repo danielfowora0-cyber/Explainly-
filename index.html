@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explainly - Deep Learning Assistant</title>
+    <meta name="description" content="An adaptive learning assistant that explains concepts based on your education level.">
+    <style>
+        :root {
+            --primary: #4f46e5; /* Indigo 600 */
+            --primary-light: #818cf8;
+            --primary-dark: #4338ca;
+            --secondary: #ec4899; /* Pink 500 */
+            --accent: #10b981; /* Emerald 500 */
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --radius: 16px;
+            --shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding-bottom: 80px;
+        }
+
+        /* Layout */
+        .container {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            margin-bottom: 32px;
+            padding-top: 32px;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 12px;
+            letter-spacing: -1.5px;
+        }
+
+        .tagline {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .sub-tagline {
+            font-size: 1rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        /* Input Section */
+        .input-card {
+            background: var(--card-bg);
+            padding: 32px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 32px;
+            border: 1px solid var(--border);
+        }
+
+        label {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--text-main);
+            font-size: 1rem;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 18px;
+            font-size: 1.15rem;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            outline: none;
+            transition: all 0.2s;
+            margin-bottom: 24px;
+            background: #f8fafc;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary);
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+        }
+
+        /* Level Selector */
+        .level-selector {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 28px;
+        }
+
+        .level-btn {
+            flex: 1;
+            padding: 14px;
+            border: 2px solid var(--border);
+            background: transparent;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .level-btn:hover {
+            border-color: var(--primary-light);
+            color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .level-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+            transform: translateY(0);
+        }
+
+        /* Main Action Button */
+        .explain-btn {
+            width: 100%;
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.25rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.2s;
+            box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .explain-btn:active {
+            transform: scale(0.98);
+        }
+
+        .explain-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Output Area */
+        #output-area {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .content-card {
+            background: var(--card-bg);
+            padding: 28px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border-left: 6px solid var(--primary);
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .content-card h3 {
+            margin-bottom: 16px;
+            color: var(--primary-dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.4rem;
+        }
+
+        .content-card p {
+            margin-bottom: 16px;
+            color: var(--text-main);
+            font-size: 1.1rem;
+            line-height: 1.7;
+        }
+
+        /* Specific Section Styles */
+        .section-definition { border-color: var(--primary); }
+        .section-context { border-color: #3b82f6; } /* Blue */
+        .section-breakdown { border-color: var(--accent); }
+        .section-example { border-color: #f59e0b; }
+        .section-visual { border-color: #8b5cf6; }
+
+        /* Breakdown List Styling */
+        .breakdown-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .breakdown-item {
+            display: flex;
+            gap: 16px;
+        }
+
+        .breakdown-marker {
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+            background: var(--accent);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);
+        }
+
+        .breakdown-content h4 {
+            margin: 0 0 6px 0;
+            color: var(--text-main);
+            font-size: 1.15rem;
+            font-weight: 700;
+        }
+
+        .breakdown-content p {
+            margin: 0;
+            font-size: 1rem;
+            color: var(--text-muted);
+        }
+        
+        .deep-note {
+            margin-top: 8px;
+            font-size: 0.9rem;
+            color: var(--primary-dark);
+            background: #eef2ff;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border-left: 3px solid var(--primary);
+            font-style: italic;
+        }
+
+        /* Visual Boxes */
+        .visual-box {
+            background-color: #0f172a; /* Slate 900 */
+            color: #4ade80;
+            padding: 24px;
+            border-radius: 12px;
+            font-family: 'Courier New', Courier, monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            border: 2px solid #334155;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.4);
+            margin-top: 10px;
+        }
+
+        .analogy-box {
+            background: #f0fdf4;
+            border: 2px dashed #4ade80;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 10px;
+            color: #15803d;
+        }
+        
+        .analogy-header {
+            font-weight: 800;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            display: block;
+            color: #16a34a;
+        }
+
+        .example-box {
+            background: #fffbeb;
+            border-left: 4px solid #f59e0b;
+            padding: 20px;
+            color: #92400e;
+            font-family: monospace;
+            margin-top: 10px;
+            border-radius: 0 12px 12px 0;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.5rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            display: none;
+        }
+
+        .dots::after {
+            content: '.';
+            animation: dots 1.5s steps(5, end) infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { color: rgba(0,0,0,0); }
+            40% { color: var(--text-muted); }
+            60% { text-shadow: .25em 0 0 var(--text-muted); }
+            80%, 100% { text-shadow: .25em 0 0 var(--text-muted), .5em 0 0 var(--text-muted); }
+        }
+
+        @keyframes slideUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            h1 { font-size: 2.2rem; }
+            .container { padding: 16px; }
+            .level-selector { flex-direction: column; }
+            .content-card { padding: 20px; }
+            .breakdown-item { flex-direction: column; gap: 8px; }
+            .breakdown-marker { width: 28px; height: 28px; font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Explainly</h1>
+        <div class="tagline">Deep understanding, simplified.</div>
+        <div class="sub-tagline">An AI-simulated tutor that builds knowledge step-by-step.</div>
+    </header>
+
+    <main>
+        <section class="input-card">
+            <label for="topicInput">What concept shall we deconstruct today?</label>
+            <input type="text" id="topicInput" placeholder="Try: Photosynthesis, Quadratic Equations, World War 1...">
+
+            <label>Select Depth Level:</label>
+            <div class="level-selector">
+                <button class="level-btn active" data-level="elementary">Elementary (Simpler)</button>
+                <button class="level-btn" data-level="highschool">High School (Standard)</button>
+                <button class="level-btn" data-level="college">College (Deep)</button>
+            </div>
+
+            <button class="explain-btn" id="explainBtn">
+                <span>Generate Explanation</span>
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            </button>
+        </section>
+
+        <div class="loading" id="loadingIndicator">
+            Analyzing Logic<span class="dots"></span>
+        </div>
+
+        <div id="output-area"></div>
+    </main>
+
+    <footer style="text-align: center; margin-top: 60px; color: var(--text-muted); font-size: 0.9rem;">
+        Demo Mode: Neural Simulation Active.
+    </footer>
+</div>
+
+<script>
+/* EXPLAINLY NEURAL SIMULATION ENGINE v4.0
+    Architecture:
+    1. Knowledge Graph: Deeply nested object structures for Showcase Topics.
+    2. Heuristic Constructor: Builds structured explanations for unknown topics based on domain logic.
+    3. Pedagogical Logic: Enforces "What -> Why -> How -> Example -> Analogy" flow.
+*/
+
+// --- 1. DEEP KNOWLEDGE BASE (SHOWCASE TOPICS) ---
+const KNOWLEDGE_BASE = {
+    "photosynthesis": {
+        elementary: {
+            definition: "Photosynthesis is the special way plants cook their own food using sunlight. Unlike us, they don't need a kitchen—they use their leaves!",
+            context: "Plants need energy to grow tall and strong. Since they can't walk to a grocery store, nature gave them a superpower to make sugar out of thin air.",
+            breakdown: [
+                { t: "The Ingredients", d: "Just like baking a cake needs flour and eggs, plants need three things: Sunlight, Water (from roots), and Air (Carbon Dioxide).", note: "Plants drink water through roots like a straw." },
+                { t: "The Leaf Factory", d: "Inside the leaf, there is a green stuff called Chlorophyll. It acts like a solar panel to catch the sun's energy.", note: "This is why leaves are green!" },
+                { t: "The Cooking", d: "The plant uses the sun's energy to mix the water and air together. This turns them into Sugar (food) for the plant.", note: "The sun provides the heat for the cooking." },
+                { t: "The Leftovers", d: "When the plant is done cooking, it releases clean Oxygen into the air. This is the air we breathe!", note: "We help plants (giving CO2), and they help us (giving Oxygen)." }
+            ],
+            example: "Next time you see a tree standing still, remember it's actually busy working! It's soaking up sun and making sugar to build new leaves.",
+            analogy: "Imagine a leaf is a tiny solar-powered bakery. The Sun is the oven. Water and Air are the dough. The result is a Sugar Cookie (energy) and a puff of fresh air.",
+            visual: "   [Sun] ☀️\n      |\n      v\n   [Leaf Bakery] 🌿 <--- (Air In)\n      ^ \n      | (Water In)\n   [Roots]\n      |\n   (Sugar Made!) 🍬",
+            summary: "Photosynthesis is just plants turning sunlight into food and giving us fresh air in return."
+        },
+        highschool: {
+            definition: "Photosynthesis is the biochemical process by which plants, algae, and some bacteria convert light energy into chemical energy stored in glucose.",
+            context: "This process is the foundation of life on Earth. It converts inorganic raw materials (CO2, H2O) into organic fuel, driving the food web and oxygenating our atmosphere.",
+            breakdown: [
+                { t: "Input Collection", d: "Roots absorb water (H2O) via osmosis. Leaves take in Carbon Dioxide (CO2) through tiny pores called stomata. Chloroplasts absorb sunlight.", note: "Stomata open and close to regulate gas exchange." },
+                { t: "Light-Dependent Reactions", d: "Inside the thylakoids (in chloroplasts), sunlight splits water molecules into Hydrogen and Oxygen. The Oxygen is released as waste.", note: "This step creates ATP (energy batteries) for the next step." },
+                { t: "The Calvin Cycle", d: "In the stroma (fluid), the plant uses the ATP energy to combine the CO2 and Hydrogen. This creates Glucose (C6H12O6).", note: "This part doesn't need direct light, so it's often called the 'Dark Reaction'." },
+                { t: "Energy Storage", d: "The glucose is used for immediate energy or linked together to form starch and cellulose for plant structure.", note: "Wood is basically solid air and water held together by sun energy." }
+            ],
+            example: "Chemical Equation: 6CO2 + 6H2O + Light Energy → C6H12O6 (Glucose) + 6O2 (Oxygen).",
+            analogy: "Think of the chloroplast as a factory. The 'Light Reaction' is the power plant generating electricity (ATP). The 'Calvin Cycle' is the assembly line using that electricity to bolt Carbon atoms together into sugar frames.",
+            visual: "Input: [Light] + [H2O] + [CO2]\n           ||\n           \\/\n     [ CHLOROPLAST ]\n     /           \\\n [Light Rxn] -> [Calvin Cycle]\n     \\           /\n      \\         /\nOutput: [O2] + [Glucose]",
+            summary: "Photosynthesis bridges the gap between the physical world (light) and the biological world (sugar), powering almost all ecosystems."
+        },
+        college: {
+            definition: "Photosynthesis is the physicochemical process of transducing photonic energy into chemical potential energy, specifically converting CO2 and H2O into carbohydrates via redox reactions.",
+            context: "Thermodynamically, it reverses the entropy produced by cellular respiration. It is the primary entry point for energy into the biosphere and the primary method of carbon fixation.",
+            breakdown: [
+                { t: "Photoexcitation (PSII)", d: "Photons strike pigments in Photosystem II, exciting electrons to a higher energy state. These electrons are passed to the Electron Transport Chain (ETC).", note: "P680 is the reaction center chlorophyll." },
+                { t: "Photolysis & Chemiosmosis", d: "Water is oxidized (H2O -> 2H+ + 1/2O2 + 2e-) to replenish electrons. The proton gradient driven by the ETC powers ATP Synthase to generate ATP.", note: "This creates the proton motive force." },
+                { t: "Photosystem I & NADPH", d: "Electrons arrive at PSI, are re-excited by light, and reduce NADP+ to NADPH. We now have chemical energy (ATP) and reducing power (NADPH).", note: "Both are required for the anabolic synthesis of sugar." },
+                { t: "Carbon Fixation (Calvin Cycle)", d: "The enzyme Rubisco catalyzes the carboxylation of RuBP. ATP and NADPH reduce the intermediate 3-PGA into G3P, the precursor to glucose.", note: "Rubisco is the most abundant protein on Earth." }
+            ],
+            example: "Quantum Efficiency: While theoretically efficient, actual photosynthetic efficiency is ~3-6% due to photorespiration and light saturation limits.",
+            analogy: "It operates like a biological hydroelectric dam. Light pumps protons 'uphill' (against a gradient). As they flow back 'downhill' through the turbine (ATP Synthase), they generate the chemical currency needed to build complex molecules.",
+            visual: "Thylakoid Membrane:\nPhoton -> [PSII] -> e- -> [Cyt] -> e- -> [PSI] -> [NADPH Reductase]\n            ^              |              ^\n          (H2O splits)   (H+ Pumping)   (Photon)\n                               |\n                          [ATP Synthase] -> ATP",
+            summary: "Ultimately, photosynthesis is an electron transport process that uses photon energy to drive the endergonic synthesis of organic compounds."
+        }
+    },
+    "quadratic equations": {
+        elementary: {
+            definition: "A quadratic equation is a math puzzle where the answer is a curved line instead of a straight one. It looks like a smile or a frown!",
+            context: "We use this math to figure out how things fly through the air, like a kicked ball or a jumping frog.",
+            breakdown: [
+                { t: "The Flying Path", d: "Imagine you throw a ball. It goes Up, slows down, and comes Down. That curved shape is called a 'Parabola'.", note: "It's symmetrical—the left side matches the right side." },
+                { t: "The Mystery Numbers", d: "Usually, we want to find out where the ball hits the ground. These spots are called the 'Roots'.", note: "Often there are two answers!" },
+                { t: "The Formula", d: "We write it with a little '2' like this: x². That means a number multiplied by itself.", note: "The little 2 is what makes the line curve." }
+            ],
+            example: "If you jump off a diving board, your path into the water is a quadratic curve.",
+            analogy: "Think of the 'Angry Birds' game. When you pull back the slingshot, the bird flies in a curved arc. The game uses quadratic math to draw that flight path!",
+            visual: "      _\n    /   \\\n   /     \\   (The Parabola)\n  /       \\\n [Start] [Land]",
+            summary: "Quadratic equations help us predict how things move in curves."
+        },
+        highschool: {
+            definition: "A quadratic equation is a polynomial equation of the second degree, typically written as ax² + bx + c = 0.",
+            context: "These equations model scenarios involving area, projectile motion, and profit optimization. Solving them finds the x-intercepts of the parabolic graph.",
+            breakdown: [
+                { t: "Identify Coefficients", d: "First, ensure the equation is in standard form (ax² + bx + c = 0). Identify a, b, and c.", note: "'a' determines if the parabola opens up or down." },
+                { t: "Choose a Method", d: "You can solve by Factoring (finding two numbers that multiply to 'c' and add to 'b') or using the Quadratic Formula.", note: "Factoring is faster, but the Formula works for everything." },
+                { t: "The Quadratic Formula", d: "x = (-b ± √(b² - 4ac)) / 2a. The '±' symbol means you calculate it twice: once with plus, once with minus.", note: "This usually gives you two different solutions for x." },
+                { t: "Verify", d: "Plug your answers back into the original equation to verify they equal zero.", note: "This catches simple arithmetic errors." }
+            ],
+            example: "Solve x² - 5x + 6 = 0.\n1. Factor: (x-2)(x-3) = 0.\n2. Solve: x=2 or x=3.\n3. Meaning: The graph crosses the x-axis at 2 and 3.",
+            analogy: "It's like finding the 'roots' of a tree. The tree is the curve in the air, but the 'roots' are the specific points where it touches the ground (the axis).",
+            visual: "Formula breakdown:\n      _______ \n-b ± / b²-4ac  <-- The Discriminant\n    /---------\n       2a",
+            summary: "Quadratics allow us to solve for variables when the relationship involves a square, creating a parabolic relationship."
+        },
+        college: {
+            definition: "A quadratic function is a second-order polynomial mapping to a conic section (parabola). It represents the simplest non-linear mathematical model.",
+            context: "It is foundational for calculus (derivatives of cubics), physics (kinematics), and linear algebra (quadratic forms).",
+            breakdown: [
+                { t: "Discriminant Analysis", d: "The term Δ = b² - 4ac determines the nature of the roots. If Δ > 0, two real roots. If Δ = 0, one real root (vertex on axis). If Δ < 0, complex conjugate roots.", note: "This predicts the system's behavior without solving it." },
+                { t: "Vertex Form", d: "Converting to f(x) = a(x-h)² + k reveals the extrema (max/min) at (h,k). This is crucial for optimization problems.", note: "h = -b/2a." },
+                { t: "Optimization", d: "In economics or physics, finding the vertex gives the maximum profit or maximum height.", note: "The derivative f'(x) = 2ax + b = 0 also yields the vertex." }
+            ],
+            example: "Maximize Profit P(x) = -2x² + 100x.\n1. Vertex x = -b/2a = -100/-4 = 25.\n2. Max Profit occurs at 25 units sold.",
+            analogy: "In optimization, the vertex represents the 'tipping point' of a system—the exact moment a trajectory shifts from rising to falling, representing peak efficiency.",
+            visual: "Graph Types based on Discriminant (D):\nD > 0: U (2 hits)\nD = 0: U (1 hit)\nD < 0: U (Float - no hits)",
+            summary: "Quadratic analysis provides the analytical tools for modeling parabolic trajectories and optimizing systems with single extrema."
+        }
+    }
+};
+
+// --- 2. HEURISTIC ENGINE (SMART FALLBACK) ---
+/* This constructs deep explanations for unknown topics by detecting the domain 
+   and assembling modular explanation blocks.
+*/
+
+function generateSmartExplanation(topic, level) {
+    const t = topic.toLowerCase();
+    const title = topic.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    
+    // 1. Detect Domain & Intent
+    let domain = 'general';
+    if (t.match(/war|battle|king|queen|empire|history|revolution|ancient|year|century|civilization|president|treaty/)) domain = 'history';
+    else if (t.match(/physics|chemistry|biology|space|star|atom|energy|cell|force|theory|law|gravity|planet|magnet/)) domain = 'science';
+    else if (t.match(/math|algebra|geometry|calc|number|equation|formula|theorem|fraction|decimal|matrix|graph/)) domain = 'math';
+    else if (t.match(/computer|ai|robot|code|internet|tech|digital|data|app|software|network|crypto|server/)) domain = 'tech';
+
+    // 2. Construct the Logic Object based on Domain
+    const data = {
+        title: title,
+        definition: "",
+        context: "",
+        breakdown: [],
+        example: "",
+        analogy: "",
+        visual: "",
+        summary: ""
+    };
+
+    // --- LOGIC: SCIENCE ---
+    if (domain === 'science') {
+        if (level === 'elementary') {
+            data.definition = `${title} is a way nature works. It's a rule that the universe follows to keep things running.`;
+            data.context = "Scientists study this to understand why things happen, like why things fall or why stars shine.";
+            data.breakdown = [
+                { t: "Observation", d: `First, people noticed that ${title} happens in the world around us.`, note: "Science starts with looking!" },
+                { t: " The Why", d: "It happens because of energy or forces pushing and pulling on things.", note: "Nothing moves without a push!" },
+                { t: "The Result", d: "Because of ${title}, we can predict what will happen next.", note: "It's like knowing the future!" }
+            ];
+            data.example = "Think of gravity. It's a rule that pulls everything down. Without it, we would float away!";
+            data.analogy = `Think of ${title} like a hidden instruction manual for the world. We can't see the book, but we can see the rules in action.`;
+            data.visual = "Step 1: 👀 Look\nStep 2: 💭 Think\nStep 3: 🧪 Test";
+            data.summary = `${title} is just a name for one of the cool ways our planet works.`;
+        } else {
+            data.definition = `${title} is a fundamental scientific concept describing a specific interaction of matter and energy.`;
+            data.context = "Understanding this concept allows us to predict physical behavior and engineer technologies that utilize natural laws.";
+            data.breakdown = [
+                { t: "Hypothesis", d: `Scientists initially proposed theories about ${title} based on empirical observation.`, note: "Observation precedes theory." },
+                { t: "Mechanism", d: "It operates through defined physical laws, involving the transfer of forces or energy states.", note: "Energy is never lost, only changed." },
+                { t: "Application", d: "We utilize our knowledge of ${title} to build machines, medicines, or prediction models.", note: "Knowledge becomes technology." }
+            ];
+            data.example = "Consider Electricity. By understanding the flow of electrons, we can power entire cities.";
+            data.analogy = `Think of ${title} as a line of code in the 'software' of the universe. It dictates how objects interact under specific conditions.`;
+            data.visual = "[ Observation ] -> [ Hypothesis ] -> [ Experiment ] -> [ LAW: " + title + " ]";
+            data.summary = `${title} is a verified explanation of physical reality that stands up to experimental testing.`;
+        }
+    }
+
+    // --- LOGIC: HISTORY ---
+    else if (domain === 'history') {
+        if (level === 'elementary') {
+            data.definition = `${title} is a real story about something big that happened a long time ago.`;
+            data.context = "We learn history so we can make the world better today by remembering what happened before.";
+            data.breakdown = [
+                { t: "The Start", d: `Everything was normal, but then something changed to start ${title}.`, note: "Big events usually have a small start." },
+                { t: "The Action", d: "Important people made choices, and many things changed for the people living then.", note: "History is made by people like you." },
+                { t: "The End", d: "Eventually, it ended, but it left the world looking different than before.", note: "The world never goes back to exactly how it was." }
+            ];
+            data.example = "Like learning about how your grandparents lived, understanding ${title} tells you where we came from.";
+            data.analogy = "History is like a giant domino line. One domino falls (an event), and it knocks over all the others, leading to where we are now.";
+            data.visual = "Past 🕰️ ---> [ " + title + " ] ---> Today 🏙️";
+            data.summary = `${title} is an important memory for the world that we keep safe in books.`;
+        } else {
+            data.definition = `${title} was a pivotal historical event or movement that significantly altered the geopolitical or social landscape.`;
+            data.context = "It serves as a case study for cause-and-effect in human civilization, shaping modern borders, laws, or ideologies.";
+            data.breakdown = [
+                { t: "Preconditions", d: "Social, economic, and political tensions accumulated, creating a need for change.", note: "Events rarely happen in a vacuum." },
+                { t: "The Catalyst", d: `Specific triggers launched ${title}, mobilizing populations and resources.`, note: "Tipping points convert tension into action." },
+                { t: "Long-term Impact", d: "The aftermath established new power structures or cultural norms that persist today.", note: "We are still living in the ripples of this event." }
+            ];
+            data.example = "Similar to the Industrial Revolution, it fundamentally shifted how society functioned.";
+            data.analogy = `View ${title} as a 'software update' for civilization. The old system crashed or became outdated, and this event installed a new version of society.`;
+            data.visual = "Cause -> [ " + title + " ] -> Effect\n   ^           |\n   |___________|";
+            data.summary = `${title} stands as a testament to how human decisions can redirect the flow of history.`;
+        }
+    }
+
+    // --- LOGIC: MATH ---
+    else if (domain === 'math') {
+        if (level === 'elementary') {
+            data.definition = `${title} is a way to play with numbers to solve a specific kind of puzzle.`;
+            data.context = "Math is like a toolkit. ${title} is just one special tool we use to measure or count things better.";
+            data.breakdown = [
+                { t: "The Problem", d: "We use this when we have a question about numbers that is hard to guess.", note: "Guessing is fun, but math is sure." },
+                { t: "The Rule", d: "There is a special recipe (formula) for ${title} that always gives the right answer.", note: "Follow the recipe, get the treat!" },
+                { t: "The Answer", d: "Once we use the rule, we find the mystery number!", note: "Math is about finding truth." }
+            ];
+            data.example = "If you want to share 10 cookies with 2 friends, math helps you know everyone gets 5.";
+            data.analogy = `${title} is like a key. It unlocks a door to an answer that was locked before.`;
+            data.visual = "Problem ❓ -> [ Formula ] -> Solution ✅";
+            data.summary = `${title} helps us make sense of the world using numbers.`;
+        } else {
+            data.definition = `${title} is a mathematical concept defined by specific axioms and logical relations.`;
+            data.context = "It provides a framework for quantification and logical deduction, essential for solving complex abstract problems.";
+            data.breakdown = [
+                { t: "Definition", d: `We define ${title} using variables, constants, and operators.`, note: "Precision is key in mathematics." },
+                { t: "Operation", d: "We apply logical steps or algorithms to manipulate these values towards a solution.", note: "Algorithms are just step-by-step instructions." },
+                { t: "Generalization", d: "The principles of ${title} can be applied to many different types of problems.", note: "Math is the universal language." }
+            ];
+            data.example = "Used in fields like engineering or finance to calculate exact outcomes from variable inputs.";
+            data.analogy = `Think of ${title} as a logical machine. You feed in raw data (numbers), the machine processes it according to strict rules, and outputs a refined result.`;
+            data.visual = "Input (x) -> [ Function: " + title + " ] -> Output (y)";
+            data.summary = `Mastering ${title} equips you with the logical tools to deconstruct and solve quantitative problems.`;
+        }
+    }
+
+    // --- LOGIC: GENERAL / TECH ---
+    else {
+        data.definition = `${title} is a concept representing a specific system, object, or idea in our world.`;
+        data.context = "Understanding this helps us navigate modern life and understand how complex systems function.";
+        data.breakdown = [
+            { t: "Components", d: `To understand ${title}, we look at the parts that make it up.`, note: "Everything is made of smaller things." },
+            { t: "Function", d: "We analyze what it does and how it interacts with the world.", note: "Function follows form." },
+            { t: "Significance", d: "We look at why ${title} is important to us today.", note: "Relevance is key." }
+        ];
+        data.example = "It is likely something you encounter or use, directly or indirectly, in daily life.";
+        data.analogy = `Imagine ${title} is a gear in a watch. It might look small, but it helps the whole machine run.`;
+        data.visual = "[ Concept ] <---> [ Application ]\n     ^                  ^\n     |__________________|";
+        data.summary = `${title} is a key building block in understanding this subject area.`;
+    }
+
+    return data;
+}
+
+// --- 3. CONTROLLER ---
+
+const state = { topic: '', level: 'elementary' };
+
+// DOM Elements
+const topicInput = document.getElementById('topicInput');
+const levelBtns = document.querySelectorAll('.level-btn');
+const explainBtn = document.getElementById('explainBtn');
+const outputArea = document.getElementById('output-area');
+const loadingIndicator = document.getElementById('loadingIndicator');
+
+// Event Listeners
+levelBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        levelBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.level = btn.dataset.level;
+    });
+});
+
+topicInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') handleExplain();
+});
+
+explainBtn.addEventListener('click', handleExplain);
+
+// Main Handler
+function handleExplain() {
+    const rawTopic = topicInput.value.trim();
+    if (!rawTopic) {
+        alert("Please enter a topic first!");
+        return;
+    }
+
+    state.topic = rawTopic;
+
+    // UI Reset
+    outputArea.innerHTML = '';
+    loadingIndicator.style.display = 'block';
+    explainBtn.disabled = true;
+    
+    // Smooth scroll to output
+    loadingIndicator.scrollIntoView({ behavior: 'smooth' });
+
+    // Simulate Processing Delay (Mental "Weight")
+    const delay = 1000; 
+
+    setTimeout(() => {
+        const content = fetchContent(state.topic, state.level);
+        renderContent(content, state.topic);
+        
+        loadingIndicator.style.display = 'none';
+        explainBtn.disabled = false;
+    }, delay);
+}
+
+// Content Router
+function fetchContent(topic, level) {
+    const key = topic.toLowerCase();
+    
+    // 1. Strict Match
+    if (KNOWLEDGE_BASE[key]) return KNOWLEDGE_BASE[key][level];
+
+    // 2. Fuzzy Match (e.g. "explain photosynthesis please")
+    for (let dbKey of Object.keys(KNOWLEDGE_BASE)) {
+        if (key.includes(dbKey)) return KNOWLEDGE_BASE[dbKey][level];
+    }
+
+    // 3. Smart Heuristic Generation
+    return generateSmartExplanation(topic, level);
+}
+
+// Renderer
+function renderContent(data, topic) {
+    const title = topic.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    
+    // Build Breakdown HTML
+    const stepsHtml = data.breakdown.map((step, index) => `
+        <div class="breakdown-item">
+            <div class="breakdown-marker">${index + 1}</div>
+            <div class="breakdown-content">
+                <h4>${step.t}</h4>
+                <p>${step.d}</p>
+                <div class="deep-note">💡 ${step.note}</div>
+            </div>
+        </div>
+    `).join('');
+
+    const html = `
+        <div class="content-card section-definition">
+            <h3>📖 Definition</h3>
+            <p><strong>${data.title || title}</strong>: ${data.definition}</p>
+        </div>
+
+        <div class="content-card section-context">
+            <h3>🤔 Context & Background</h3>
+            <p>${data.context}</p>
+        </div>
+
+        <div class="content-card section-breakdown">
+            <h3>🧠 Deep Breakdown</h3>
+            <div class="breakdown-container">
+                ${stepsHtml}
+            </div>
+        </div>
+
+        <div class="content-card section-example">
+            <h3>🧪 Worked Example</h3>
+            <div class="example-box">
+                ${data.example}
+            </div>
+        </div>
+
+        <div class="content-card section-visual">
+            <h3>💡 Mental Model & Analogy</h3>
+            <div class="analogy-box">
+                <span class="analogy-header">The Logic:</span>
+                ${data.analogy}
+            </div>
+            <p style="margin-top:20px; font-weight:700; color:var(--text-muted);">Visual Representation:</p>
+            <div class="visual-box">${data.visual}</div>
+        </div>
+
+        <div class="content-card">
+            <h3>📝 Summary</h3>
+            <p>${data.summary}</p>
+        </div>
+    `;
+
+    outputArea.innerHTML = html;
+    
+    // Staggered Animation
+    const cards = document.querySelectorAll('.content-card');
+    cards.forEach((card, i) => card.style.animationDelay = `${i * 0.15}s`);
+}
+
+</script>
+
+</body>
+</html>
+
+
+
